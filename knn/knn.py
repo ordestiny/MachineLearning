@@ -11,6 +11,7 @@ class KNNa(object):
         trainData = dataSetNP[:,0:dataSetNP.shape[1]-1]   #获得训练数据
         labels = dataSetNP[:,dataSetNP.shape[1]-1]    #获得训练数据类别
         return trainData,labels
+
     #得到测试数据的类别
     def classify(self, testData, trainData, labels, k):
         #计算测试数据与训练数据之间的欧式距离

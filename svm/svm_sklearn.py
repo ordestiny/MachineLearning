@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 from sklearn import svm
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
 data = []
