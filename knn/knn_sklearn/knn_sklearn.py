@@ -1,58 +1,48 @@
 import numpy as np
-from sklearn import neighbors
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import classification_report
-from sklearn.cross_validation import train_test_split
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn import datasets
+from sklearn.neighbors import NearestCentroid
 
-''''' 数据读入 '''
-data = []
-labels = []
-with open("data.txt") as ifile:
-    for line in ifile:
-        tokens = line.strip().split(' ')
-        data.append([float(tk) for tk in tokens[:-1]])
-        labels.append(tokens[-1])
-x = np.array(data)
-labels = np.array(labels)
-y = np.zeros(labels.shape)
+n_neighbors = 15
 
-''''' 标签转换为0/1 '''
-y[labels == 'fat'] = 1
+# import some data to play with
+iris = datasets.load_iris()
+# we only take the first two features. We could avoid this ugly
+# slicing by using a two-dim dataset
+X = iris.data[:, :2]
+y = iris.target
 
-''''' 拆分训练数据与测试数据 '''
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+h = .02  # step size in the mesh
 
-''''' 创建网格以方便绘制 '''
-h = .01
-x_min, x_max = x[:, 0].min() - 0.1, x[:, 0].max() + 0.1
-y_min, y_max = x[:, 1].min() - 1, x[:, 1].max() + 1
-xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                     np.arange(y_min, y_max, h))
+# Create color maps
+cmap_light = ListedColormap(['#FFAAAA', '#AAFFAA', '#AAAAFF'])
+cmap_bold = ListedColormap(['#FF0000', '#00FF00', '#0000FF'])
 
-''''' 训练KNN分类器 '''
-clf = neighbors.KNeighborsClassifier(algorithm='kd_tree')
-clf.fit(x_train, y_train)
+for shrinkage in [None, .2]:
+    # we create an instance of Neighbours Classifier and fit the data.
+    clf = NearestCentroid(shrink_threshold=shrinkage)
+    clf.fit(X, y)
+    y_pred = clf.predict(X)
+    print(shrinkage, np.mean(y == y_pred))
+    # Plot the decision boundary. For that, we will assign a color to each
+    # point in the mesh [x_min, x_max]x[y_min, y_max].
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                         np.arange(y_min, y_max, h))
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
 
-'''''测试结果的打印'''
-answer = clf.predict(x)
-print(x)
-print(answer)
-print(y)
-print(np.mean(answer == y))
+    # Put the result into a color plot
+    Z = Z.reshape(xx.shape)
+    plt.figure()
+    plt.pcolormesh(xx, yy, Z, cmap=cmap_light)
 
-'''''准确率与召回率'''
-precision, recall, thresholds = precision_recall_curve(y_train, clf.predict(x_train))
-answer = clf.predict(x)
-print(classification_report(y, answer, target_names=['thin', 'fat']))
+    # Plot also the training points
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=cmap_bold,
+                edgecolor='b', s=20)
+    plt.title("3-Class classification (shrink_threshold=%r)"
+              % shrinkage)
+    plt.axis('tight')
 
-''''' 将整个测试空间的分类结果用不同颜色区分开'''
-answer = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1]
-z = answer.reshape(xx.shape)
-plt.contourf(xx, yy, z, cmap=plt.cm.Paired, alpha=0.8)
-
-''''' 绘制训练样本 '''
-plt.scatter(x_train[:, 0], x_train[:, 1], c=y_train, cmap=plt.cm.Paired)
-plt.xlabel(u'身高')
-plt.ylabel(u'体重')
 plt.show()
